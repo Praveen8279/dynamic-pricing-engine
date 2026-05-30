@@ -6,3 +6,5 @@ streamlit
 joblib
 beautifulsoup4
 requests
+aiohttp
+psycopg2-binary

@@ -17,4 +17,5 @@ COPY . .
 EXPOSE 8501
 
 # Step 7: Run the application when the container starts
-CMD ["streamlit", "run", "app.py", "--server.port=8501", "--server.address=0.0.0.0"]
+# Change the last line of your Dockerfile to this:
+CMD ["python", "pipeline_orchestrator.py"]

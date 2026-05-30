@@ -1,0 +1,44 @@
+version: '3.8'
+
+services:
+  # Service 1: The Production Relational Database
+  postgres_db:
+    image: postgres:15-alpine
+    container_name: production_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: supersecretpassword
+      POSTGRES_DB: pricing_analytics
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  # Service 2: The Ultra-Fast Cache Database
+  redis_cache:
+    image: redis:7-alpine
+    container_name: production_redis
+    restart: always
+    ports:
+      - "6379:6379"
+
+  # Service 3: Your Data Science & ML Web App
+  web_app:
+    build: .
+    container_name: pricing_streamlit_app
+    restart: always
+    ports:
+      - "8501:8501"
+    environment:
+      - DB_HOST=postgres_db
+      - DB_NAME=pricing_analytics
+      - DB_USER=admin
+      - DB_PASSWORD=supersecretpassword
+      - REDIS_HOST=redis_cache
+    depends_on:
+      - postgres_db
+      - redis_cache
+
+volumes:
+  postgres_data:
