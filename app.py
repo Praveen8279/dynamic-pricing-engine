@@ -32,7 +32,7 @@ st.title("📊 Enterprise Real-Time Dynamic Pricing Engine")
 st.markdown("---")
 
 # 3. Data Fetching Routine from Cloud Database
-@st.cache_data(ttl=60)
+@st.cache_data(ttl=2)
 def fetch_historical_records():
     try:
         response = requests.get(f"{SUPABASE_URL}/rest/v1/product_prices?select=*", headers=headers)
