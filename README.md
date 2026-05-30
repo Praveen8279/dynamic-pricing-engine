@@ -93,15 +93,15 @@ Open your VS Code application and clean up your remote repository by running the
 
 2. **Stage all your complete project files:**
 Paste.
-   git add .
+    git add.
 Commit your final architectural upgrades:
 Paste.
 git commit -m "Docs: Deploy complete real-time async REST architecture and updated README documentation".
 
 Push everything straight to your cloud profile:
 Paste.
-git push origin main.
-!
+git push origin ma.
+!in
 
 📝 Project Executive Summary
 The Enterprise Dynamic Pricing Engine is a full-stack Data Science and Machine Learning pipeline that solves a core retail business problem: How to set the most profitable price for an asset in real time based on fluctuating market signals.
