@@ -31,16 +31,14 @@ The application isolates processes into clean, modular layers to maintain indust
 To clone and execute this project locally on your machine, launch your terminal window and execute the following steps:
 
 ### 1. Initialize and Install Software Packages
-
 # Install all required data science frameworks
 pip install -r requirements.txt
-2. Trigger ETL Data Scraping & Model Training
 
+2. Trigger ETL Data Scraping & Model Training
 # Pulls live data, saves raw_prices.csv, and exports trained model weights
 python train.py
 
 3. Run the Live Visual UI
-
 # Launches the browser interface on localhost:8501
 streamlit run app.py
 
@@ -54,6 +52,7 @@ docker build -t dynamic-pricing-engine .
 docker run -p 8501:8501 dynamic-pricing-engine
 
 📊 Core Feature Implementations
+
 Live Web Scraping: Bypasses character artifacts (Â) during response text extraction to guarantee clean numerical conversions.
 
 Feature Engineering: Injecting field-specific economic variances (e.g., weekend premiums, surge multipliers) to train the model on real-world competitive supply-and-demand mechanics.
@@ -69,6 +68,6 @@ Low Inference Latency: Model architecture states are stored via serialized binar
 3. Press **`Ctrl + S`** (or `Cmd + S` on Mac) to save the file.
 4. Open your bottom VS Code terminal, type these three final commands one by one, and press **Enter** after each:
 
-git add README.md
-git commit -m "Docs: Complete final project release documentation"
-git push origin main
+git add README.md.
+git commit -m "Docs: Complete final project release documentation".
+git push origin main.
