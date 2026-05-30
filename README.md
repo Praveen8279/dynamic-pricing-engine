@@ -93,7 +93,7 @@ Open your VS Code application and clean up your remote repository by running the
 
 2. **Stage all your complete project files:**
 Paste.
-    git add.
+    git add .
 Commit your final architectural upgrades:
 Paste.
 git commit -m "Docs: Deploy complete real-time async REST architecture and updated README documentation".
