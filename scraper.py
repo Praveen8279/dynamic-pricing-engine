@@ -4,9 +4,13 @@ from bs4 import BeautifulSoup
 import numpy as np
 import requests
 from datetime import datetime
-
-SUPABASE_URL = "https://bmsrfnjpaqxmegxwbhum.supabase.co"
-SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJtc3JmbmpwYXF4bWVneHdiaHVtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAxNTgzMTgsImV4cCI6MjA5NTczNDMxOH0.o742QJe6ivSsUvARoolRJqcapPPItF8PIOdw8y5ZPPI"
+import streamlit as st
+try:
+    SUPABASE_URL = st.secrets["SUPABASE_URL"]
+    SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
+except Exception:
+    SUPABASE_URL = "https://bmsrfnjpaqxmegxwbhum.supabase.co"
+    SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJtc3JmbG5qcGFxeG1lZ3h3Ymh1bSIsInJvbGUiOiJhbm9uIiwiaWF0IjoxNzE2OTU2NDA0LCJleHAiOjIwMzI1MzI0MDR9.YOUR_ANON_KEY_FROM_DASHBOARD"
 
 headers = {
     "apikey": SUPABASE_KEY,
