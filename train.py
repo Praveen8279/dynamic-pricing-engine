@@ -1,5 +1,5 @@
 import pandas as pd
-import psycopg2
+import requests
 import os
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler, OneHotEncoder
@@ -8,30 +8,33 @@ import xgboost as xgb
 import joblib
 from scraper import scrape_live_marketplace
 
-# Environment variable lookups for secure container networking
-DB_HOST = os.getenv("DB_HOST", "localhost")
-DB_NAME = os.getenv("DB_NAME", "pricing_analytics")
-DB_USER = os.getenv("DB_USER", "admin")
-DB_PASS = os.getenv("DB_PASSWORD", "supersecretpassword")
+SUPABASE_URL = "https://bmsrfnjpaqxmegxwbhum.supabase.co"
+SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJtc3JmbmpwYXF4bWVneHdiaHVtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAxNTgzMTgsImV4cCI6MjA5NTczNDMxOH0.o742QJe6ivSsUvARoolRJqcapPPItF8PIOdw8y5ZPPI"
+
+headers = {
+    "apikey": SUPABASE_KEY,
+    "Authorization": f"Bearer {SUPABASE_KEY}"
+}
 
 def execute_ml_pipeline():
-    # 1. Trigger our new asynchronous PostgreSQL scraper
-    if not scrape_live_marketplace(): 
-        print("Scraping engine pass failed.")
+    print("Step 1: Invoking parallel scraper module...")
+    if not scrape_live_marketplace():
+        print("❌ Scraper routine returned empty dataset.")
         return
 
-    # 2. Ingest structured features directly using a PostgreSQL connection
-    print("Step 3: Querying historical features from production PostgreSQL engine...")
-    conn = psycopg2.connect(host=DB_HOST, database=DB_NAME, user=DB_USER, password=DB_PASS)
+    print("Step 2: Fetching consolidated dataset via API...")
+    response = requests.get(f"{SUPABASE_URL}/rest/v1/product_prices?select=*", headers=headers)
     
-    # Read database tables into a Pandas DataFrame
-    df = pd.read_sql_query("SELECT * FROM product_prices", conn)
-    conn.close()
-    
-    if df.empty:
-        print("No records found in database to train on.")
+    if response.status_code != 200:
+        print("❌ Cloud fetch failed.")
         return
-    
+        
+    df = pd.DataFrame(response.json())
+    if df.empty:
+        print("❌ Database table verified empty.")
+        return
+
+    print(f"Processing {len(df)} rows for model fitting...")
     X = df[['demand_score', 'competitor_price', 'day_of_week']]
     y = df['price']
     
@@ -44,14 +47,14 @@ def execute_ml_pipeline():
     
     X_train_processed = preprocessor.fit_transform(X_train)
     
-    print("Step 4: Training XGBoost optimization algorithms...")
-    model = xgb.XGBRegressor(n_estimators=200, learning_rate=0.05, max_depth=5, random_state=42)
+    print("Step 3: Training XGBoost Core Architecture...")
+    model = xgb.XGBRegressor(n_estimators=150, learning_rate=0.06, max_depth=4, random_state=42)
     model.fit(X_train_processed, y_train)
     
     os.makedirs('models', exist_ok=True)
     joblib.dump(preprocessor, 'models/preprocessor.pkl')
     model.save_model('models/pricing_xgb_model.json')
-    print("🎯 Success: Enterprise ML Pipeline execution complete!")
+    print("🎯 Model training complete! Production configurations saved.")
 
 if __name__ == "__main__":
     execute_ml_pipeline()

@@ -2,71 +2,54 @@ import asyncio
 import aiohttp
 from bs4 import BeautifulSoup
 import numpy as np
-import psycopg2 # Swapped from sqlite3 to psycopg2
-import os
-import time
+import requests
+from datetime import datetime
 
-# Safely read database coordinates from environment variables (fallback to localhost for local testing)
-DB_HOST = os.getenv("DB_HOST", "localhost")
-DB_NAME = os.getenv("DB_NAME", "pricing_analytics")
-DB_USER = os.getenv("DB_USER", "admin")
-DB_PASS = os.getenv("DB_PASSWORD", "supersecretpassword")
+SUPABASE_URL = "https://bmsrfnjpaqxmegxwbhum.supabase.co"
+SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJtc3JmbmpwYXF4bWVneHdiaHVtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAxNTgzMTgsImV4cCI6MjA5NTczNDMxOH0.o742QJe6ivSsUvARoolRJqcapPPItF8PIOdw8y5ZPPI"
 
-def init_db():
-    # Establish connection to the PostgreSQL server container
-    conn = psycopg2.connect(host=DB_HOST, database=DB_NAME, user=DB_USER, password=DB_PASS)
-    cursor = conn.cursor()
-    # Create enterprise-ready relational table schema
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS product_prices (
-            id SERIAL PRIMARY KEY,
-            product_name TEXT,
-            demand_score REAL,
-            competitor_price REAL,
-            day_of_week VARCHAR(10),
-            price REAL,
-            timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    ''')
-    conn.commit()
-    cursor.close()
-    conn.close()
+headers = {
+    "apikey": SUPABASE_KEY,
+    "Authorization": f"Bearer {SUPABASE_KEY}",
+    "Content-Type": "application/json",
+    "Prefer": "return=minimal"
+}
 
 async def fetch_page_data(session, url, page_number):
-    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
+    client_headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
     try:
-        async with session.get(url, headers=headers, timeout=10) as response:
+        async with session.get(url, headers=client_headers, timeout=10) as response:
             if response.status != 200: return []
-            
             html = await response.text(encoding='utf-8')
             soup = BeautifulSoup(html, 'html.parser')
             products = soup.find_all('article', class_='product_pod')
             
             page_records = []
+            current_day = "Weekend" if datetime.now().weekday() >= 5 else "Weekday"
+            
             for index, item in enumerate(products):
                 title = item.h3.a['title']
                 raw_price = item.find('p', class_='price_color').text
                 clean_price = float(raw_price.replace('£', '').replace('$', '').replace('Â', '').strip())
                 
-                np.random.seed(index + page_number)
-                demand_score = np.round(np.random.uniform(2.0, 9.5), 1)
-                competitor_margin = np.random.uniform(-10.0, 15.0)
-                competitor_price = np.round(clean_price + competitor_margin, 2)
-                day_of_week = np.random.choice(['Weekday', 'Weekend'], p=[0.7, 0.3])
+                calculated_demand = round(min(9.8, max(1.5, 3.0 + (len(title) % 7))), 1)
+                price_variance = -3.50 if index % 2 == 0 else 2.75
+                competitor_price = round(max(1.00, clean_price + price_variance), 2)
                 
-                page_records.append((title, demand_score, competitor_price, day_of_week, clean_price))
+                page_records.append({
+                    "product_name": title,
+                    "demand_score": calculated_demand,
+                    "competitor_price": competitor_price,
+                    "day_of_week": current_day,
+                    "price": clean_price
+                })
             return page_records
-    except Exception as e:
-        print(f"Error scraping page {page_number}: {e}")
+    except Exception:
         return []
 
 async def scrape_all_targets():
-    init_db()
     base_url = "https://books.toscrape.com/catalogue/page-{}.html"
-    urls_to_scrape = [base_url.format(page) for page in range(1, 5)]
-    
-    start_time = time.time()
-    print("Step 1: Spawning parallel async loops pointing to production PostgreSQL...")
+    urls_to_scrape = [base_url.format(page) for page in range(1, 6)]
     
     async with aiohttp.ClientSession() as session:
         tasks = [fetch_page_data(session, url, i) for i, url in enumerate(urls_to_scrape, start=1)]
@@ -75,23 +58,18 @@ async def scrape_all_targets():
     final_records = [record for page_list in all_results for record in page_list]
     
     if final_records:
-        conn = psycopg2.connect(host=DB_HOST, database=DB_NAME, user=DB_USER, password=DB_PASS)
-        cursor = conn.cursor()
-        # Using PostgreSQL specific batch placeholder syntax (%s instead of ?)
-        cursor.executemany('''
-            INSERT INTO product_prices (product_name, demand_score, competitor_price, day_of_week, price)
-            VALUES (%s, %s, %s, %s, %s)
-        ''', final_records)
-        conn.commit()
-        cursor.close()
-        conn.close()
-        
-        print(f"📁 Success: Logged {len(final_records)} records asynchronously into PostgreSQL container!")
-        return True
+        print(f" Collected {len(final_records)} live items across Levels 1-5.")
+        response = requests.post(f"{SUPABASE_URL}/rest/v1/product_prices", headers=headers, json=final_records)
+        if response.status_code in [200, 201]:
+            return True
+        else:
+            print(f"API Error: {response.text}")
     return False
 
 def scrape_live_marketplace():
     return asyncio.run(scrape_all_targets())
 
 if __name__ == "__main__":
-    scrape_live_marketplace()
+    print("🚀 Booting data ingestion engine...")
+    if scrape_live_marketplace():
+        print("✅ Success! Database updated.")
